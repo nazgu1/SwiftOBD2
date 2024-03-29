@@ -105,11 +105,19 @@ class BLEManager: NSObject, CommProtocol {
 
     func didDiscover(_: CBCentralManager, peripheral: CBPeripheral, advertisementData _: [String: Any], rssi _: NSNumber) {
 //        connect(to: peripheral)
-//        appendFoundPeripheral(peripheral: peripheral, advertisementData: advertisementData, rssi: rssi)
+        appendFoundPeripheral(peripheral: peripheral)
         if foundPeripheralCompletion != nil {
             foundPeripheralCompletion?(peripheral, nil)
         }
     }
+
+    var foundPeripherals: [CBPeripheral] = []
+
+    func appendFoundPeripheral(peripheral: CBPeripheral) {
+        if !foundPeripherals.contains(where: { $0.identifier == peripheral.identifier }) {
+            foundPeripherals.append(peripheral)
+        }
+     }
 
     func connect(to peripheral: CBPeripheral) {
         logger.info("Connecting to: \(peripheral.name ?? "")")
@@ -126,6 +134,25 @@ class BLEManager: NSObject, CommProtocol {
         connectedPeripheral?.discoverServices([CBUUID(string: "FFE0"), CBUUID(string: "FFF0")])
         connectionState = .connectedToAdapter
         obdDelegate?.connectionStateChanged(state: .connectedToAdapter)
+    }
+
+    func scanForPeripherals(_ timeout: TimeInterval) async -> [CBPeripheral]? {
+        // scan for peripherals with the specified services for the specified timeout
+        return try? await Timeout(seconds: timeout) {
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<[CBPeripheral], Error>) in
+                self.foundPeripheralCompletion = { peripheral, error in
+                    if let peripheral = peripheral {
+                        self.appendFoundPeripheral(peripheral: peripheral)
+                    }
+                    if self.foundPeripherals.count > 0 {
+                        continuation.resume(returning: self.foundPeripherals)
+                    } else if let error = error {
+                        continuation.resume(throwing: error)
+                    }
+                }
+                self.startScanning([CBUUID(string: "FFF0"), CBUUID(string: "FFE0")])
+            }
+        }
     }
 
     func scanForPeripheralAsync(_ timeout: TimeInterval) async throws -> CBPeripheral? {
@@ -263,6 +290,9 @@ class BLEManager: NSObject, CommProtocol {
     ///     `BLEManagerError.timeout` if the operation times out.
     ///     `BLEManagerError.unknownError` if an unknown error occurs.
     func sendCommand(_ command: String) async throws -> [String] {
+        #if DEBUG
+            logger.debug("Sending command: \(command)")
+        #endif
         guard sendMessageCompletion == nil else {
             throw BLEManagerError.sendingMessagesInProgress
         }
@@ -309,9 +339,9 @@ class BLEManager: NSObject, CommProtocol {
 
             // remove the last line
             lines.removeLast()
-//            #if DEBUG
-//                logger.debug("Response: \(lines)")
-//            #endif
+            #if DEBUG
+                logger.debug("Response: \(lines)")
+            #endif
 
             if sendMessageCompletion != nil {
                 if lines[0].uppercased().contains("NO DATA") {
@@ -444,33 +474,3 @@ enum BLEManagerError: Error, CustomStringConvertible {
         }
     }
 }
-
-// func appendFoundPeripheral(peripheral: CBPeripheralProtocol, advertisementData: [String : Any], rssi: NSNumber) {
-//    if rssi.intValue >= 0 { return }
-//    let peripheralName = advertisementData[CBAdvertisementDataLocalNameKey] as? String ?? nil
-//    var _name = "NoName"
-//
-//    if peripheralName != nil {
-//        _name = String(peripheralName!)
-//    } else if peripheral.name != nil {
-//        _name = String(peripheral.name!)
-//    }
-//
-//    let foundPeripheral: Peripheral = Peripheral(_peripheral: peripheral,
-//                                                 _name: _name,
-//                                                 _advData: advertisementData,
-//                                                 _rssi: rssi,
-//                                                 _discoverCount: 0)
-//
-//    if let index = foundPeripherals.firstIndex(where: { $0.peripheral.identifier.uuidString == peripheral.identifier.uuidString }) {
-//        if foundPeripherals[index].discoverCount % 50 == 0 {
-//            foundPeripherals[index].name = _name
-//            foundPeripherals[index].rssi = rssi.intValue
-//            foundPeripherals[index].discoverCount += 1
-//        } else {
-//            foundPeripherals[index].discoverCount += 1
-//        }
-//    } else {
-//        foundPeripherals.append(foundPeripheral)
-//    }
-// }

@@ -80,7 +80,13 @@ public struct Message {
               frame.data.count >= 2 + Int(dataLen)
         else { // Pre-validate the length
             print("Failed to parse single frame message")
-            print("frame: \(frames.first)")
+            if let frame = frames.first {
+                print("frame type: \(frame.type)")
+                print("frame dataLen: \(frame.dataLen)")
+                print("frame data count: \(frame.data.count)")
+                print("frame raw: \(frame.raw)")
+                print("frame data: \(frame.data.compactMap { String(format: "%02X", $0) }.joined(separator: " "))")
+            }
             return nil
         }
         return frame.data.subdata(in: 2 ..< (2 + Int(dataLen))) // Using Substring

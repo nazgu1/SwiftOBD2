@@ -133,6 +133,27 @@ public class OBDService: ObservableObject, OBDServiceDelegate {
             .eraseToAnyPublisher()
     }
 
+    /// Sends an OBD2 command to the vehicle and returns the raw response.
+    /// - Parameter command: The OBD2 command to send.
+    /// - Returns: measurement result
+    /// - Throws: Errors that might occur during the request process.
+    public func requestPIDs(_ commands: [OBDCommand]) async throws -> [OBDCommand: MeasurementResult] {
+        let response = try await sendCommand("01" + commands.compactMap { $0.properties.command.dropFirst(2) }.joined())
+        let messages = OBDParcer(response, idBits: elm327.obdProtocol.idBits)?.messages
+
+        guard let responseData = messages?.first?.data else {
+            throw OBDServiceError.parsingError
+        }
+
+        var batchedResponse = BatchedResponse(response: responseData)
+        let results: [OBDCommand: MeasurementResult] = commands.reduce(into: [:]) { result, command in
+            let measurement = batchedResponse.extractValue(command)
+            result[command] = measurement
+        }
+
+        return results
+    }
+
     /// Adds an OBD2 command to the list of commands to be requested.
     public func addPID(_ pid: OBDCommand) {
         pidList.append(pid)
@@ -143,28 +164,6 @@ public class OBDService: ObservableObject, OBDServiceDelegate {
         pidList.removeAll { $0 == pid }
     }
 
-    /// Sends an OBD2 command to the vehicle and returns the raw response.
-    /// - Parameter command: The OBD2 command to send.
-    /// - Returns: measurement result
-    /// - Throws: Errors that might occur during the request process.
-    public func requestPIDs(_ commands: [OBDCommand]) async throws -> [OBDCommand: MeasurementResult] {
-        let response = try await sendCommand("01" + commands.compactMap { $0.properties.command.dropFirst(2) }.joined())
-        let messages = OBDParcer(response, idBits: elm327.obdProtocol.idBits)?.messages
-        guard let responseData = messages?.first?.data else { return [:] }
-        var batchedResponse = BatchedResponse(response: responseData)
-        let results: [OBDCommand: MeasurementResult] = commands.reduce(into: [:]) { result, command in
-            let measurement = batchedResponse.extractValue(command)
-            result[command] = measurement
-        }
-
-        return results
-//        var results: [OBDCommand: MeasurementResult] = [:]
-//        for command in commands {
-//            let result = batchedResponse.extractValue(command)
-//            results[command] = result
-//        }
-//        return results
-    }
 
     /// Sends an OBD2 command to the vehicle and returns the raw response.
     ///  - Parameter command: The OBD2 command to send.
@@ -246,6 +245,7 @@ enum OBDServiceError: Error {
     case scanFailed(underlyingError: Error)
     case clearFailed(underlyingError: Error)
     case commandFailed(command: String, error: Error)
+    case parsingError
 }
 
 public func getVINInfo(vin: String) async throws -> VINResults {
