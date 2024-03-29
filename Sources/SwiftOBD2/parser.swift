@@ -82,7 +82,7 @@ public struct Message {
             print("Failed to parse single frame message")
             if let frame = frames.first {
                 print("frame type: \(frame.type)")
-                print("frame dataLen: \(frame.dataLen)")
+                print("frame dataLen: \(String(describing: frame.dataLen))")
                 print("frame data count: \(frame.data.count)")
                 print("frame raw: \(frame.raw)")
                 print("frame data: \(frame.data.compactMap { String(format: "%02X", $0) }.joined(separator: " "))")

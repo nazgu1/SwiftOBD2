@@ -240,7 +240,7 @@ class ELM327 {
         } else {
             print("Invalid response: \(response)")
             logger.error("Invalid response: \(response)")
-            throw SetupError.invalidResponse(message: "message: \(message), \(response.first)")
+            throw SetupError.invalidResponse(message: "message: \(message), \(String(describing: response.first))")
         }
     }
 
@@ -403,7 +403,7 @@ extension ELM327 {
               let ecuData = messages.first?.data else {
             throw NSError(domain: "Invalid data format", code: 0, userInfo: nil)
         }
-        let binaryData = BitArray(data: ecuData[1...]).binaryArray
+        let binaryData = BitArray(data: ecuData.dropFirst()).binaryArray
         return extractSupportedPIDs(binaryData)
     }
 
