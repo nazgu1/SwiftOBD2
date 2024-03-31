@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import OSLog
 
 enum CommandAction {
     case setHeaderOn
@@ -24,11 +25,18 @@ class MOCKComm: CommProtocol {
     @Published var connectionState: ConnectionState = .disconnected
     var connectionStatePublisher: Published<ConnectionState>.Publisher { $connectionState }
     var obdDelegate: OBDServiceDelegate?
+    let logger = Logger.communcation
 
     var ecuSettings: MockECUSettings = .init()
 
     func sendCommand(_ command: String) async throws -> [String] {
-        print("Sending command: \(command)")
+        logger.info("Sending command \(command)")
+        let response = try await processCommand(command)
+        logger.info("Received response \(response)")
+        return response
+    }
+
+    func processCommand(_ command: String) async throws -> [String] {
         var header = ""
 
         let prefix = String(command.prefix(2))
@@ -54,8 +62,6 @@ class MOCKComm: CommProtocol {
 
             if response.count > 18 {
                 let chunks = response.chunked(by: 15)
-                print("chunks ", chunks)
-
                 var ff = chunks[0]
 
                 var Totallength = 0
@@ -95,7 +101,6 @@ class MOCKComm: CommProtocol {
                 if ecuSettings.echo {
                     assembledFrame.insert(" \(command)", at: 0)
                 }
-                print("Assembled framas", assembledFrame)
                 return assembledFrame.map { String($0) }
             } else {
                 let lengthHex = String(format: "%02X", response.count / 3)
@@ -103,7 +108,6 @@ class MOCKComm: CommProtocol {
                 while response.count < 28 {
                     response.append("00 ")
                 }
-                print("response", response)
                 if ecuSettings.echo {
                     response = " \(command)" + response
                 }
@@ -140,7 +144,6 @@ class MOCKComm: CommProtocol {
             if ecuSettings.echo {
                 response .insert(command, at: 0)
             }
-            print("res",response)
             return response
 
         } else {
@@ -171,7 +174,6 @@ extension OBDCommand {
     static func mockResponse(forCommand command: String) -> String? {
 
         guard let obd2Command = self.from(command: command) else {
-            print("Invalid command", command, "\n")
             return "Invalid command"
         }
 
@@ -250,7 +252,6 @@ extension OBDCommand {
                 return nil
             }
         default:
-            print("none for:" + command)
             return nil
         }
     }

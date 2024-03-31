@@ -5,7 +5,7 @@
 //  Created by kemo konteh on 9/18/23.
 //
 
-import Foundation
+import OSLog
 
 public enum MeasurementUnits: String, Codable {
     case metric = "Metric"
@@ -261,7 +261,7 @@ func decodeMonitor(_ data: Data) -> Monitor? {
     let extra_bytes = databytes.count % 9
 
     if extra_bytes != 0 {
-        print("Encountered monitor message with non-multiple of 9 bytes. Truncating...", databytes.count, extra_bytes)
+        Logger.elm327.error("Encountered monitor message with non-multiple of 9 bytes. Truncating...")
         databytes = databytes.dropLast(extra_bytes)
     }
 
@@ -382,7 +382,7 @@ func obdCompliance(_ data: Data) -> String? {
     if i < OBD_COMPLIANCE.count {
         return OBD_COMPLIANCE[Int(i)]
     } else {
-        print("Invalid response for OBD compliance (no table entry)")
+        Logger.elm327.error("Invalid response for OBD compliance (no table entry)")
         return nil
     }
 }
@@ -399,20 +399,20 @@ func fuelStatus(_ data: Data) -> String? {
         if 7 - index < FUEL_STATUS.count {
             status_1 = FUEL_STATUS[7 - index]
         } else {
-            print("Invalid response for fuel status (high bits set)")
+            Logger.elm327.error("Invalid response for fuel status (high bits set)")
         }
     } else {
-        print("Invalid response for fuel status (multiple/no bits set)")
+        Logger.elm327.error("Invalid response for fuel status (multiple/no bits set in high bits)")
     }
 
     if lowBits.filter({ $0 == 1 }).count == 1, let index = lowBits.firstIndex(of: 1) {
         if 7 - index < FUEL_STATUS.count {
             status_2 = FUEL_STATUS[7 - index]
         } else {
-            print("Invalid response for fuel status (low bits set)")
+            Logger.elm327.error("Invalid response for fuel status (low bits set)")
         }
     } else {
-        print("Invalid response for fuel status (multiple/no bits set in low bits)")
+        Logger.elm327.error("Invalid response for fuel status (multiple/no bits set in low bits)")
     }
 
     if let status_1 = status_1, let status_2 = status_2 {
@@ -420,7 +420,7 @@ func fuelStatus(_ data: Data) -> String? {
     } else if let status = status_1 ?? status_2 {
         return "Status: \(status)"
     } else {
-        print("No valid status found.")
+        Logger.elm327.error("No valid status found.")
         return nil
     }
 }
@@ -557,13 +557,13 @@ func parse_monitor_test(_ data: Data) -> MonitorTest? {
         test.name = testInfo.0
         test.desc = testInfo.1
     } else {
-        print("Encountered unknown Test ID: ", String(format: "%02x"))
+        Logger.elm327.error("Encountered unknown Test ID: \(String(format: "%02x", tid))")
         test.name = "TID: $\(String(format: "%02x", tid)) CID: $\(String(format: "%02x", cid))"
         test.desc = "Unknown"
     }
 
     guard let uas = uasIDS[cid] else {
-        print("Encountered Unknown Units and Scaling ID: ", String(format: "%02x", cid))
+        Logger.elm327.error("Encountered Unknown Units and Scaling ID: \(String(format: "%02x", cid))")
         return nil
     }
 

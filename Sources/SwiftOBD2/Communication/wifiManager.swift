@@ -5,8 +5,8 @@
 //  Created by kemo konteh on 2/26/24.
 //
 
-import Foundation
 import Network
+import OSLog
 
 protocol CommProtocol {
     func sendCommand(_ command: String) async throws -> [String]
@@ -28,6 +28,7 @@ class WifiManager: CommProtocol {
     var connectionStatePublisher: Published<ConnectionState>.Publisher { $connectionState }
 
     var tcp: NWConnection?
+    let logger = Logger.communcation
 
     func connectAsync(timeout: TimeInterval) async throws {
         let host = NWEndpoint.Host("192.168.0.10")
@@ -39,13 +40,13 @@ class WifiManager: CommProtocol {
             tcp?.stateUpdateHandler = { newState in
                 switch newState {
                 case .ready:
-                    print("Connected")
+                    self.logger.info("Connected to adapter")
                     self.connectionState = .connectedToAdapter
                     continuation.resume(returning: ())
                 case let .waiting(error):
-                    print("Waiting \(error)")
+                    self.logger.error("Waiting \(error)")
                 case let .failed(error):
-                    print("Failed \(error)")
+                    self.logger.error("Failed \(error)")
                     continuation.resume(throwing: CommunicationError.errorOccurred(error))
                 default:
                     break
@@ -59,12 +60,14 @@ class WifiManager: CommProtocol {
         guard let data = "\(command)\r".data(using: .ascii) else {
             throw CommunicationError.invalidData
         }
-        print("Sending: \(command)")
+        #if DEBUG
+        logger.info("Sending command \(command)")
+        #endif
 
         return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<[String], Error>) in
             self.tcp?.send(content: data, completion: .contentProcessed { error in
                 if let error = error {
-                    print("Error sending data \(error)")
+                    self.logger.error("Error sending command \(error)")
                     continuation.resume(throwing: error)
                 }
 
@@ -73,7 +76,7 @@ class WifiManager: CommProtocol {
                         return
                     }
                     if string.contains(">") {
-                        print("Received \(string)")
+                        self.logger.info("Received response \(string)")
 
                         var lines = string
                             .components(separatedBy: .newlines)

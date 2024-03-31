@@ -130,7 +130,7 @@ public class Garage: ObservableObject {
         // put garage in demo mode
         switch isDemoMode {
         case true:
-            print("Demo Mode")
+            loadMockGarage()
         case false:
             loadGarage()
         }

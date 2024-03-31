@@ -26,7 +26,7 @@ public enum ConnectionState {
 }
 
 class BLEManager: NSObject, CommProtocol {
-    let logger = Logger(subsystem: "com.kemo.SmartOBD2", category: "BLEManager")
+    let logger = Logger.communcation
 
     static let RestoreIdentifierKey: String = "OBD2Adapter"
 
@@ -176,7 +176,9 @@ class BLEManager: NSObject, CommProtocol {
 
     func didDiscoverServices(_ peripheral: CBPeripheral, error _: Error?) {
         for service in peripheral.services ?? [] {
-            print("Discovered service: \(service.uuid)")
+            #if DEBUG
+                logger.debug("Discovered service: \(service.uuid)")
+            #endif
             if service.uuid == CBUUID(string: "FFE0") {
                 peripheral.discoverCharacteristics([CBUUID(string: "FFE1")], for: service)
             } else if service.uuid == CBUUID(string: "FFF0") {
@@ -223,6 +225,9 @@ class BLEManager: NSObject, CommProtocol {
 
         switch characteristic {
         case ecuReadCharacteristic:
+            #if DEBUG
+                logger.debug("Received data from ECU: \(characteristicValue)")
+            #endif
             processReceivedData(characteristicValue, completion: sendMessageCompletion)
 
         default:

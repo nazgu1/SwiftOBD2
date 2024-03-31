@@ -5,7 +5,7 @@
 //  Created by kemo konteh on 9/19/23.
 //
 
-import Foundation
+import OSLog
 
 enum FrameType: UInt8, Codable {
     case singleFrame = 0x00
@@ -37,7 +37,7 @@ public struct OBDParcer {
             if let frame = Frame(raw: $0, idBits: idBits) {
                 return frame
             } else {
-                print("Failed to create Frame for raw data: \($0)")
+                Logger.obd2Parcer.error("Failed to parse frame: \($0)")
                 return nil
             }
         }
@@ -75,21 +75,7 @@ public struct Message {
     }
 
     private func parseSingleFrameMessage(_ frames: [Frame]) -> Data? {
-        guard let frame = frames.first, frame.type == .singleFrame,
-              let dataLen = frame.dataLen, dataLen > 0
-//              frame.data.count >= 2 + Int(dataLen)
-        else { // Pre-validate the length
-            print("Failed to parse single frame message")
-            if let frame = frames.first {
-                print("frame type: \(frame.type)")
-                print("frame dataLen: \(String(describing: frame.dataLen))")
-                print("frame data count: \(frame.data.count)")
-                print("frame raw: \(frame.raw)")
-                print("frame data: \(frame.data.compactMap { String(format: "%02X", $0) }.joined(separator: " "))")
-            }
-            return nil
-        }
-        return frame.data.dropFirst(2)
+        return frames.first?.data.dropFirst(2)
     }
 
     private func parseMultiFrameMessage(_ frames: [Frame]) -> Data? {
@@ -105,7 +91,7 @@ public struct Message {
         var assembledFrame: Frame = firstFrame
         // Extract data from consecutive frames, skipping the PCI byte
         for frame in consecutiveFrames {
-            assembledFrame.data.append(frame.data[1...])
+            assembledFrame.data.append(frame.data.dropFirst())
         }
         return extractDataFromFrame(assembledFrame, startIndex: 3)
     }
@@ -116,9 +102,9 @@ public struct Message {
         }
         let endIndex = startIndex + Int(frameDataLen) - 1
         guard endIndex <= frame.data.count else {
-            return frame.data[startIndex...]
+            return frame.data.dropFirst(startIndex)
         }
-        return frame.data[startIndex ..< endIndex]
+        return frame.data.dropFirst(startIndex).prefix(endIndex)
     }
 }
 
@@ -146,7 +132,6 @@ struct Frame {
 
 //
 //        guard dataBytes.count % 2 == 0, dataBytes.count >= 6, dataBytes.count <= 12 else {
-//                print(dataBytes.count)
 //                    print("invalid frame size")
 //                    print(dataBytes.compactMap { String(format: "%02X", $0) }.joined(separator: " ") )
 //                    return nil
@@ -154,10 +139,8 @@ struct Frame {
 
         guard let txID = ECUID(rawValue: dataBytes[3] & 0x07), 
                 let dataType = data.first,
-              let type = FrameType(rawValue: dataType & 0xF0)
-        else {
-            print(dataBytes.compactMap { String(format: "%02X", $0) }.joined(separator: " "))
-            print("invalid frame type")
+                    let type = FrameType(rawValue: dataType & 0xF0) else {
+            Logger.obd2Parcer.error("Failed to create Frame for raw data: \(raw)")
             return nil
         }
 

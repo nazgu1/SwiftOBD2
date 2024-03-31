@@ -17,10 +17,21 @@ import Combine
 import Foundation
 import OSLog
 
+extension Logger {
+    /// Using your bundle identifier is a great way to ensure a unique identifier.
+    private static var subsystem = Bundle.main.bundleIdentifier ?? "com.example.MyApp"
+
+    /// All logs related to tracking and analytics.
+    static let obd2Service = Logger(subsystem: subsystem, category: "obd2Service")
+    static let elm327 = Logger(subsystem: subsystem, category: "elm327")
+    static let obd2Parcer = Logger(subsystem: subsystem, category: "OBD2Parcer")
+    static let communcation = Logger(subsystem: subsystem, category: "communcation")
+}
+
 class ELM327 {
     // MARK: - Properties
 
-    private let logger = Logger(subsystem: "com.kemo.SmartOBD2", category: "ELM327")
+    private let logger = Logger.elm327
     var connectionState: ConnectionState = .disconnected {
         didSet {
             obdDelegate?.connectionStateChanged(state: connectionState)
@@ -238,7 +249,6 @@ class ELM327 {
         if response.contains("OK") {
             return response
         } else {
-            print("Invalid response: \(response)")
             logger.error("Invalid response: \(response)")
             throw SetupError.invalidResponse(message: "message: \(message), \(String(describing: response.first))")
         }
@@ -425,7 +435,6 @@ struct BatchedResponse {
 
     init(response: Data) {
         self.response = response
-        print(response.compactMap { String(format: "%02X ", $0) }.joined())
     }
 
     mutating func extractValue(_ cmd: OBDCommand) -> MeasurementResult? {
@@ -433,7 +442,7 @@ struct BatchedResponse {
         let size = properties.bytes
         guard response.count >= size else { return nil }
         let valueData = response.prefix(size)
-        print("value ", valueData.compactMap { String(format: "%02X ", $0) }.joined())
+//        print("value ", valueData.compactMap { String(format: "%02X ", $0) }.joined())
 
         response.removeFirst(size)
         //        print("Buffer: \(buffer.compactMap { String(format: "%02X ", $0) }.joined())")

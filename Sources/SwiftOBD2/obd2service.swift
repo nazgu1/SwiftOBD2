@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import OSLog
 
 public enum connectionType {
     case bluetooth
@@ -63,7 +64,7 @@ public class OBDService: ObservableObject, OBDServiceDelegate {
             let obdInfo = try await initializeVehicle(preferedProtocol)
             return obdInfo
         } catch {
-            print("Error: \(error)")
+            Logger.obd2Service.error("Error starting connection: \(error)")
             throw OBDServiceError.adapterConnectionFailed(underlyingError: error) // Propagate
         }
     }
