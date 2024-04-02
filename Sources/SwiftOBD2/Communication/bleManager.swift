@@ -136,7 +136,12 @@ class BLEManager: NSObject, CommProtocol {
         logger.info("Connected to peripheral: \(peripheral.name ?? "Unnamed")")
         connectedPeripheral = peripheral
         connectedPeripheral?.delegate = self
-        connectedPeripheral?.discoverServices([CBUUID(string: "FFE0"), CBUUID(string: "FFF0")])
+        connectedPeripheral?.discoverServices([
+                    CBUUID(string: "FFE0"),
+                    CBUUID(string: "FFF0"),
+                    CBUUID(string: "BEEF"),
+                    CBUUID(string: "E7810A71-73AE-499D-8C15-FAA9AEF0C3F2"),
+                ])
         connectionState = .connectedToAdapter
         obdDelegate?.connectionStateChanged(state: .connectedToAdapter)
     }
@@ -193,6 +198,8 @@ class BLEManager: NSObject, CommProtocol {
                 peripheral.discoverCharacteristics([CBUUID(string: "FFE1")], for: service)
             } else if service.uuid == CBUUID(string: "FFF0") {
                 peripheral.discoverCharacteristics([CBUUID(string: "FFF1"), CBUUID(string: "FFF2")], for: service)
+            } else if service.uuid == CBUUID(string: "E7810A71-73AE-499D-8C15-FAA9AEF0C3F2") {
+                peripheral.discoverCharacteristics([CBUUID(string: "BEF8D6C9-9C21-4C9E-B632-BD58C1009F9F")], for: service)
             } else {
                 peripheral.discoverCharacteristics(nil, for: service)
             }
@@ -214,6 +221,9 @@ class BLEManager: NSObject, CommProtocol {
             } else if characteristic.uuid.uuidString == "FFF1" {
                 ecuReadCharacteristic = characteristic
             } else if characteristic.uuid.uuidString == "FFF2" {
+                ecuWriteCharacteristic = characteristic
+            } else if characteristic.uuid.uuidString == "BEF8D6C9-9C21-4C9E-B632-BD58C1009F9F" {
+                ecuReadCharacteristic = characteristic
                 ecuWriteCharacteristic = characteristic
             }
         }
