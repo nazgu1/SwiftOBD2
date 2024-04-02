@@ -172,7 +172,12 @@ class BLEManager: NSObject, CommProtocol {
                     }
                     self.foundPeripheralCompletion = nil
                 }
-                self.startScanning([CBUUID(string: "FFF0"), CBUUID(string: "FFE0")])
+                self.startScanning([
+                    CBUUID(string: "FFE0"),
+                    CBUUID(string: "FFF0"),
+                    CBUUID(string: "BEEF"),
+                    CBUUID(string: "E7810A71-73AE-499D-8C15-FAA9AEF0C3F2"),
+                ])
             }
         }
     }
