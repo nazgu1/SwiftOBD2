@@ -308,8 +308,12 @@ extension OBDCommand {
                     return "46" + " " + hexTemp
                 case .controlModuleVoltage:
                     let voltage = Int.random(in: 11000...15000)
-                    let hexVoltage = String(format: "%04X", voltage)
-                    return "42" + " " + hexVoltage
+                    let A = voltage / 256
+                    let B = voltage % 256
+
+                    let hexA = String(format: "%02X", A)
+                    let hexB = String(format: "%02X", B)
+                    return "42" + " " + hexA + " " + hexB
                 default:
                     return nil
             }
