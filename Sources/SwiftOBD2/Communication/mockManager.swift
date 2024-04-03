@@ -302,6 +302,14 @@ extension OBDCommand {
                     let distance = Int.random(in: 0...65535)
                     let hexDistance = String(format: "%04X", distance)
                     return "31" + " " + hexDistance
+                case .ambientAirTemp:
+                    let temp = Int.random(in: 50...150) + 40
+                    let hexTemp = String(format: "%02X", temp)
+                    return "46" + " " + hexTemp
+                case .controlModuleVoltage:
+                    let voltage = Int.random(in: 11000...15000)
+                    let hexVoltage = String(format: "%04X", voltage)
+                    return "42" + " " + hexVoltage
                 default:
                     return nil
             }
