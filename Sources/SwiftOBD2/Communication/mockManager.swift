@@ -235,6 +235,7 @@ extension OBDCommand {
                     case .coolantTemp:
                         let temp = Int.random(in: 50...150) + 40
                         let hexTemp = String(format: "%02X", temp)
+                        print("😇 coolantTemp: \(temp)")
                         return "05" + " " + hexTemp
                     case .maf:
                         let maf = Int.random(in: 0...655) * 100
