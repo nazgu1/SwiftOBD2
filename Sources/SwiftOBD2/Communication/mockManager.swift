@@ -98,7 +98,9 @@ class MOCKComm: CommProtocol {
                 if ecuSettings.echo {
                     assembledFrame.insert(" \(command)", at: 0)
                 }
-                return assembledFrame.map { String($0) }
+                return assembledFrame.map {
+                    ecuSettings.spaces ? String($0) : String($0).replacingOccurrences(of: " ", with: "")
+                }
             } else {
                 let lengthHex = String(format: "%02X", response.count / 3)
                 response = header + " " + lengthHex + " " + String(mode) + " " + response
@@ -108,7 +110,7 @@ class MOCKComm: CommProtocol {
                 if ecuSettings.echo {
                     response = " \(command)" + response
                 }
-                return [response]
+                return [ecuSettings.spaces ? response : response.replacingOccurrences(of: " ", with: "")]
             }
         } else if command.hasPrefix("AT") {
             let action = command.dropFirst(2)
