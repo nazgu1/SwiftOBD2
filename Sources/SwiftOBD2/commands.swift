@@ -374,9 +374,8 @@ public enum OBDCommand: Codable, Hashable, Comparable {
     }()
 
     static var allCommands: [OBDCommand] = {
-        var commands: [OBDCommand] = []
-        OBDCommand.General.allCases.map {
-            commands.append(.general($0))
+        var commands: [OBDCommand] = OBDCommand.General.allCases.map {
+            return .general($0)
         }
 
         for command in OBDCommand.Mode1.allCases {

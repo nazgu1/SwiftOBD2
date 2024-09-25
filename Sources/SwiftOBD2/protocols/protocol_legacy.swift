@@ -147,7 +147,7 @@ struct LegacyFrame {
 
     init(raw: String) throws {
         self.raw = raw
-        var rawData = raw
+        let rawData = raw
 
         let dataBytes = rawData.hexBytes
 

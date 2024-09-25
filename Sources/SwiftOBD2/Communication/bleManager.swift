@@ -35,7 +35,9 @@ class BLEManager: NSObject, CommProtocol {
     static let services = [
         CBUUID(string: "FFE0"),
         CBUUID(string: "FFF0"),
-        CBUUID(string: "18F0"), //e.g. VGate iCar Pro
+        CBUUID(string: "BEEF"),
+        CBUUID(string: "18F0"),  //e.g. VGate iCar Pro
+        CBUUID(string: "E7810A71-73AE-499D-8C15-FAA9AEF0C3F2"),
     ]
 
     let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.example.app", category: "BLEManager")
@@ -181,6 +183,9 @@ class BLEManager: NSObject, CommProtocol {
                 peripheral.discoverCharacteristics([CBUUID(string: "FFF1"), CBUUID(string: "FFF2")], for: service)
             case CBUUID(string: "18F0"):
                 peripheral.discoverCharacteristics([CBUUID(string: "2AF0"), CBUUID(string: "2AF1")], for: service)
+            case CBUUID(string: "E7810A71-73AE-499D-8C15-FAA9AEF0C3F2"):
+                peripheral.discoverCharacteristics(
+                    [CBUUID(string: "BEF8D6C9-9C21-4C9E-B632-BD58C1009F9F")], for: service)
             default:
                 peripheral.discoverCharacteristics(nil, for: service)
             }
@@ -207,6 +212,9 @@ class BLEManager: NSObject, CommProtocol {
             case "2AF0": // for servcice 18F0
                 ecuReadCharacteristic = characteristic
             case "2AF1": // for servcice 18F0
+                ecuWriteCharacteristic = characteristic
+            case "BEF8D6C9-9C21-4C9E-B632-BD58C1009F9F":
+                ecuReadCharacteristic = characteristic
                 ecuWriteCharacteristic = characteristic
             default:
                 break

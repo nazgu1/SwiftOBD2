@@ -57,7 +57,7 @@ class MOCKComm: CommProtocol {
             mode = mode + 40
 
             if response.count > 18 {
-                var chunks = response.chunked(by: 15)
+                let chunks = response.chunked(by: 15)
 
                 var ff = chunks[0]
 
@@ -129,6 +129,8 @@ class MOCKComm: CommProtocol {
                     return ["OK"]
                 case "E0":
                     ecuSettings.echo = false
+                    return ["OK"]
+                case "S0":
                     return ["OK"]
                 case "DPN":
                     return ["06"]

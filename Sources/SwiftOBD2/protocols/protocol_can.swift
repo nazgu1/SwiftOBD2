@@ -16,7 +16,7 @@ protocol CANProtocol {
 
 extension CANProtocol {
     func parseDefault(_ lines: [String], idBits: Int) throws -> [MessageProtocol] {
-        return try CANParser(lines, idBits: idBits).messages ?? []
+        return try CANParser(lines, idBits: idBits).messages
     }
 
     func parseLegacy(_ lines: [String]) throws -> [MessageProtocol] {

@@ -173,7 +173,7 @@ class ELM327 {
             throw ELM327Error.invalidResponse(message: "Invalid protocol number: \(obdProtocolNumber)")
         }
 
-        try await testProtocol(obdProtocol)
+        _ = try await testProtocol(obdProtocol)
 
         return obdProtocol
     }
@@ -233,12 +233,12 @@ class ELM327 {
 //        [.ATZ, .ATD, .ATL0, .ATE0, .ATH1, .ATAT1, .ATRV, .ATDPN]
         self.logger.info("Initializing ELM327 adapter...")
             do {
-                try await sendCommand("ATZ") // Reset adapter
-                try await okResponse("ATE0") // Echo off
-                try await okResponse("ATL0") // Linefeeds off
-                try await okResponse("ATS0") // Spaces off
-                try await okResponse("ATH1") // Headers off
-                try await okResponse("ATSP0") // Set protocol to automatic
+               _ = try await sendCommand("ATZ") // Reset adapter
+                _ = try await okResponse("ATE0") // Echo off
+                _ = try await okResponse("ATL0") // Linefeeds off
+                _ = try await okResponse("ATS0") // Spaces off
+                _ = try await okResponse("ATH1") // Headers off
+                _ = try await okResponse("ATSP0") // Set protocol to automatic
                 self.logger.info("ELM327 adapter initialized successfully.")
             } catch {
                 self.logger.error("Adapter initialization failed: \(error.localizedDescription)")
@@ -394,8 +394,8 @@ extension ELM327 {
         }
 
         // Assign transmission ECU to messages without an ECU assignment
-        for message in messages where ecuMap[message.ecu.rawValue ?? 0] == nil {
-            ecuMap[message.ecu.rawValue ?? 0] = .transmission
+        for message in messages where ecuMap[message.ecu.rawValue] == nil {
+            ecuMap[message.ecu.rawValue] = .transmission
         }
 
         return ecuMap
@@ -417,7 +417,7 @@ extension ELM327 {
                 // Ex.
                 //        || ||
                 // 7E8 06 41 00 BE 7F B8 13
-                guard let supportedPidsByECU = try? parseResponse(response) else {
+                guard let supportedPidsByECU = parseResponse(response) else {
                     continue
                 }
 
