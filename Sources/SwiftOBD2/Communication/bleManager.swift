@@ -25,18 +25,31 @@ public enum ConnectionState {
     case connectedToVehicle
 }
 
+extension ConnectionState: CustomStringConvertible {
+    public var description: String {
+        switch self {
+        case .disconnected:
+            return "Disconnected"
+        case .connectedToAdapter:
+            return "Connected to Adapter"
+        case .connectedToVehicle:
+            return "Connected to Vehicle"
+        }
+    }
+}
+
 class BLEManager: NSObject, CommProtocol {
     private let peripheralSubject = PassthroughSubject<CBPeripheral, Never>()
 
     var peripheralPublisher: AnyPublisher<CBPeripheral, Never> {
-      return peripheralSubject.eraseToAnyPublisher()
+        return peripheralSubject.eraseToAnyPublisher()
     }
 
     static let services = [
         CBUUID(string: "FFE0"),
         CBUUID(string: "FFF0"),
         CBUUID(string: "BEEF"),
-        CBUUID(string: "18F0"),  //e.g. VGate iCar Pro
+        CBUUID(string: "18F0"), // e.g. VGate iCar Pro
         CBUUID(string: "E7810A71-73AE-499D-8C15-FAA9AEF0C3F2"),
     ]
 
@@ -127,7 +140,7 @@ class BLEManager: NSObject, CommProtocol {
 
     @Published var foundPeripherals: [CBPeripheral] = []
 
-     func appendFoundPeripheral(peripheral: CBPeripheral, advertisementData: [String : Any], rssi: NSNumber) {
+    func appendFoundPeripheral(peripheral: CBPeripheral, advertisementData _: [String: Any], rssi: NSNumber) {
         if rssi.intValue >= 0 { return }
         if let index = foundPeripherals.firstIndex(where: { $0.identifier.uuidString == peripheral.identifier.uuidString }) {
             foundPeripherals[index] = peripheral
@@ -135,7 +148,7 @@ class BLEManager: NSObject, CommProtocol {
             peripheralSubject.send(peripheral)
             foundPeripherals.append(peripheral)
         }
-     }
+    }
 
     func connect(to peripheral: CBPeripheral) {
         logger.info("Connecting to: \(peripheral.name ?? "")")
@@ -237,12 +250,12 @@ class BLEManager: NSObject, CommProtocol {
         }
 
         switch characteristic {
-            case ecuReadCharacteristic:
-                processReceivedData(characteristicValue, completion: sendMessageCompletion)
-            default:
-                if let responseString = String(data: characteristicValue, encoding: .utf8) {
-                    logger.info("Unknown characteristic: \(characteristic)\nResponse: \(responseString)")
-                }
+        case ecuReadCharacteristic:
+            processReceivedData(characteristicValue, completion: sendMessageCompletion)
+        default:
+            if let responseString = String(data: characteristicValue, encoding: .utf8) {
+                logger.info("Unknown characteristic: \(characteristic)\nResponse: \(responseString)")
+            }
         }
     }
 
@@ -270,7 +283,7 @@ class BLEManager: NSObject, CommProtocol {
 
     // MARK: - Async Methods
 
-    func connectAsync(timeout: TimeInterval, peripheral: CBPeripheral? = nil) async throws {
+    func connectAsync(timeout: TimeInterval, peripheral _: CBPeripheral? = nil) async throws {
         if connectionState != .disconnected {
             return
         }
@@ -290,7 +303,7 @@ class BLEManager: NSObject, CommProtocol {
             }
             connect(to: peripheral)
         }
-        self.connectionCompletion = nil
+        connectionCompletion = nil
     }
 
     /// Sends a message to the connected peripheral and returns the response.
@@ -303,7 +316,7 @@ class BLEManager: NSObject, CommProtocol {
     ///     `BLEManagerError.peripheralNotConnected` if the peripheral is not connected.
     ///     `BLEManagerError.timeout` if the operation times out.
     ///     `BLEManagerError.unknownError` if an unknown error occurs.
-    func sendCommand(_ command: String, retries: Int = 3) async throws -> [String] {
+    func sendCommand(_ command: String, retries _: Int = 3) async throws -> [String] {
         guard sendMessageCompletion == nil else {
             throw BLEManagerError.sendingMessagesInProgress
         }

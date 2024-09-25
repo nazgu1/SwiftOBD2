@@ -14,9 +14,9 @@
 /// * Monitors vehicle status and retrieves diagnostic trouble codes (DTCs)
 
 import Combine
+import CoreBluetooth
 import Foundation
 import OSLog
-import CoreBluetooth
 
 enum ELM327Error: Error, LocalizedError {
     case noProtocolFound
@@ -50,7 +50,6 @@ enum ELM327Error: Error, LocalizedError {
     }
 }
 
-
 class ELM327 {
 //    private var obdProtocol: PROTOCOL = .NONE
     var canProtocol: CANProtocol?
@@ -80,14 +79,14 @@ class ELM327 {
     }
 
     private func setupConnectionStateSubscriber() {
-            comm.connectionStatePublisher
-                .receive(on: DispatchQueue.main)
-                .sink { [weak self] state in
-                    self?.connectionState = state
-                    self?.obdDelegate?.connectionStateChanged(state: state)
-                    self?.logger.debug("Connection state updated: \(state.hashValue)")
-                }
-                .store(in: &cancellables)
+        comm.connectionStatePublisher
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] state in
+                self?.connectionState = state
+                self?.obdDelegate?.connectionStateChanged(state: state)
+                self?.logger.debug("Connection state updated: [\(state.description)]")
+            }
+            .store(in: &cancellables)
     }
 
     // MARK: - Adapter and Vehicle Setup
@@ -113,7 +112,7 @@ class ELM327 {
 //        }
 
 //        self.obdProtocol = obdProtocol
-        self.canProtocol = protocols[detectedProtocol]
+        canProtocol = protocols[detectedProtocol]
 
         let vin = await requestVin()
 
@@ -138,14 +137,14 @@ class ELM327 {
     /// - Returns: The detected `PROTOCOL`.
     /// - Throws: `ELM327Error` if detection fails.
     private func detectProtocol(preferredProtocol: PROTOCOL? = nil) async throws -> PROTOCOL {
-        self.logger.info("Starting protocol detection...")
+        logger.info("Starting protocol detection...")
 
         if let protocolToTest = preferredProtocol {
-            self.logger.info("Attempting preferred protocol: \(protocolToTest.description)")
+            logger.info("Attempting preferred protocol: \(protocolToTest.description)")
             if try await testProtocol(protocolToTest) {
                 return protocolToTest
             } else {
-                self.logger.warning("Preferred protocol \(protocolToTest.description) failed. Falling back to automatic detection.")
+                logger.warning("Preferred protocol \(protocolToTest.description) failed. Falling back to automatic detection.")
             }
         } else {
             do {
@@ -155,7 +154,7 @@ class ELM327 {
             }
         }
 
-        self.logger.error("Failed to detect a compatible OBD protocol.")
+        logger.error("Failed to detect a compatible OBD protocol.")
         throw ELM327Error.noProtocolFound
     }
 
@@ -203,20 +202,20 @@ class ELM327 {
     private func testProtocol(_ obdProtocol: PROTOCOL) async throws -> Bool {
         // test protocol by sending 0100 and checking for 41 00 response
         do {
-
             let response = try await sendCommand("0100", retries: 3)
 
+            logger.info("Protocol \(obdProtocol.rawValue) returned repsonse: \(response.joined())")
             if response.joined().contains("4100") {
-                self.logger.info("Protocol \(obdProtocol.description) is valid.")
-                self.r100 = response
+                logger.info("Protocol \(obdProtocol.description) is valid.")
+                r100 = response
                 return true
             } else {
-                self.logger.warning("Protocol \(obdProtocol.rawValue) did not return valid 0100 response.")
+                logger.warning("Protocol \(obdProtocol.rawValue) did not return valid 0100 response.")
                 return false
             }
         } catch {
-              self.logger.warning("Error testing protocol \(obdProtocol.description): \(error.localizedDescription)")
-              return false
+            logger.warning("Error testing protocol \(obdProtocol.description): \(error.localizedDescription)")
+            return false
         }
     }
 
@@ -231,19 +230,19 @@ class ELM327 {
     /// - Throws: Various setup-related errors.
     func adapterInitialization() async throws {
 //        [.ATZ, .ATD, .ATL0, .ATE0, .ATH1, .ATAT1, .ATRV, .ATDPN]
-        self.logger.info("Initializing ELM327 adapter...")
-            do {
-               _ = try await sendCommand("ATZ") // Reset adapter
-                _ = try await okResponse("ATE0") // Echo off
-                _ = try await okResponse("ATL0") // Linefeeds off
-                _ = try await okResponse("ATS0") // Spaces off
-                _ = try await okResponse("ATH1") // Headers off
-                _ = try await okResponse("ATSP0") // Set protocol to automatic
-                self.logger.info("ELM327 adapter initialized successfully.")
-            } catch {
-                self.logger.error("Adapter initialization failed: \(error.localizedDescription)")
-                throw ELM327Error.adapterInitializationFailed
-            }
+        logger.info("Initializing ELM327 adapter...")
+        do {
+            _ = try await sendCommand("ATZ") // Reset adapter
+            _ = try await okResponse("ATE0") // Echo off
+            _ = try await okResponse("ATL0") // Linefeeds off
+            _ = try await okResponse("ATS0") // Spaces off
+            _ = try await okResponse("ATH1") // Headers off
+            _ = try await okResponse("ATSP0") // Set protocol to automatic
+            logger.info("ELM327 adapter initialized successfully.")
+        } catch {
+            logger.error("Adapter initialization failed: \(error.localizedDescription)")
+            throw ELM327Error.adapterInitializationFailed
+        }
     }
 
     private func setHeader(header: String) async throws {
@@ -282,8 +281,8 @@ class ELM327 {
         return statusCommand.properties.decode(data: statusData)
     }
 
-    func scanForTroubleCodes() async throws -> [ECUID:[TroubleCode]] {
-        var dtcs: [ECUID:[TroubleCode]]  = [:]
+    func scanForTroubleCodes() async throws -> [ECUID: [TroubleCode]] {
+        var dtcs: [ECUID: [TroubleCode]] = [:]
         logger.info("Scanning for trouble codes")
         let dtcCommand = OBDCommand.Mode3.GET_DTC
         let dtcResponse = try await sendCommand(dtcCommand.properties.command)
@@ -324,7 +323,6 @@ class ELM327 {
         guard let vinResponse = try? await sendCommand(command.properties.command) else {
             return nil
         }
-
 
         guard let data = try? canProtocol?.parse(vinResponse).first?.data,
               var vinString = String(bytes: data, encoding: .utf8)
@@ -477,8 +475,8 @@ struct BatchedResponse {
         let result = cmd.properties.decode(data: valueData, unit: unit)
 
         switch result {
-            case .success(let measurementResult):
-                return measurementResult.measurementResult
+        case .success(let measurementResult):
+            return measurementResult.measurementResult
         case .failure(let error):
             print("Failed to decode \(cmd.properties.command): \(error.localizedDescription)")
             return nil
@@ -511,7 +509,7 @@ enum ECUHeader {
 }
 
 // Possible setup errors
-//enum SetupError: Error {
+// enum SetupError: Error {
 //    case noECUCharacteristic
 //    case invalidResponse(message: String)
 //    case noProtocolFound
@@ -520,7 +518,7 @@ enum ECUHeader {
 //    case peripheralNotFound
 //    case ignitionOff
 //    case invalidProtocol
-//}
+// }
 
 public struct OBDInfo: Codable, Hashable {
     public var vin: String?
