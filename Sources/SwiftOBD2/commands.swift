@@ -512,7 +512,7 @@ extension OBDCommand.Mode1 {
         case .fuelRailPressureAbs: return CommandProperties("0159", "Fuel rail pressure (absolute)", 4, .uas(0x1B), true)
         case .relativeAccelPos: return CommandProperties("015A", "Relative accelerator pedal position", 3, .percent, true)
         case .hybridBatteryLife: return CommandProperties("015B", "Hybrid battery pack remaining life", 3, .percent)
-        case .engineOilTemp: return CommandProperties("015C", "Engine oil temperature", 3, .temp, true)
+        case .engineOilTemp: return CommandProperties("015C", "Engine oil temperature", 2, .temp, true)
         case .fuelInjectionTiming: return CommandProperties("015D", "Fuel injection timing", 4, .injectTiming, true)
         case .fuelRate: return CommandProperties("015E", "Engine fuel rate", 4, .fuelRate, true)
         case .emissionsReq: return CommandProperties("015F", "Designed emission requirements", 3, .none)
